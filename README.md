@@ -93,45 +93,9 @@ docker compose logs worker --tail 20
 | `players` | full_name_ru, full_name_en, weight, height |
 | `player_season_club` | связь игрок–сезон–клуб + **player_number** |
 
-**Схема БД (ER):**
+**Схема БД:**
 
-```mermaid
-erDiagram
-    clubs ||--o{ player_season_club : club_id
-    seasons ||--o{ player_season_club : season_id
-    players ||--o{ player_season_club : player_id
-
-    clubs {
-        bigint id PK
-        string name_ru
-        string name_en
-        string city_ru
-        string city_en
-    }
-
-    seasons {
-        bigint id PK
-        string name
-        smallint year_start
-        smallint year_end
-    }
-
-    players {
-        bigint id PK
-        string full_name_ru
-        string full_name_en
-        smallint weight
-        smallint height
-    }
-
-    player_season_club {
-        bigint id PK
-        bigint player_id FK
-        bigint season_id FK
-        bigint club_id FK
-        smallint player_number
-    }
-```
+![Схема БД](laravel-app/public/assets/img/shem.jpg)
 
 Игровой номер задаётся в `player_season_club`: один игрок может иметь разные номера в разных клубах и сезонах.
 
@@ -142,7 +106,7 @@ erDiagram
 **Страница `/task2`:**
 
 - Карточка итога: кнопка **«Скачать дамп БД (SQL)»** → `GET /task2/dump`
-- Место под изображение схемы: `public/assets/img/shem.jpg`
+- Схема БД на странице: `laravel-app/public/assets/img/shem.jpg`
 - Меню из 3 пресетов (JOIN, GROUP BY, оконная функция) + SQL-редактор
 - `POST /task2/query` — выполнение SELECT / других команд
 
@@ -175,31 +139,6 @@ erDiagram
 >500 000 пользователей; кнопка выгрузки; **без перезагрузки** страницы; **AJAX** с прогрессом; ссылка на скачивание; поля: Фамилия, Имя, Телефон, E-mail.
 
 ### Реализация
-
-**Схема БД (задание 3):**
-
-```mermaid
-erDiagram
-    users {
-        bigint id PK
-        string name
-        string email UK
-        string first_name
-        string last_name
-        string phone
-        string password
-        timestamp email_verified_at
-    }
-
-    exports {
-        bigint id PK
-        string status "pending|processing|completed|failed"
-        int processed
-        int total
-        string file_path
-        text error_message
-    }
-```
 
 Таблицы `users` и `exports` не связаны FK: job пишет прогресс в `exports`, CSV читает из `users`.
 
