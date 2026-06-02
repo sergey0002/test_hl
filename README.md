@@ -352,7 +352,7 @@ docker compose exec app sh -lc "cd laravel-app && composer test"
 
 ---
 
-## Полезные команды
+##   команды
 
 ```bash
 # Миграции и сиды (включая 500k users)
@@ -370,28 +370,4 @@ docker compose exec app sh -lc "cd laravel-app && php artisan test"
 ```
 
 ---
-
-## Архитектура (кратко)
-
-```text
-Браузер → Nginx → laravel-app/public/index.php
-              ├── web: Blade (задания 1–3, home)
-              └── api: JSON (экспорт)
-
-Task3: Browser --AJAX--> Task3Controller --dispatch--> Redis Queue
-              ↑                           ↓
-              └──── poll status ──── Worker → ProcessCsvExport → CSV
-```
-
----
-
-## Соответствие вакансии
-
-| Навык | Где в проекте |
-|-------|----------------|
-| Laravel 12 | Миграции, Eloquent, Jobs, Blade, API |
-| PostgreSQL, SQL | Задание 2, dump, `generate_series` |
-| Redis, очереди | Экспорт CSV, worker |
-| PHPUnit | `tests/Unit`, `tests/Feature` |
-| Docker | `docker-compose.yml` |
  
