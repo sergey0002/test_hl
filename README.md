@@ -317,6 +317,4 @@ Task3: Browser --AJAX--> Task3Controller --dispatch--> Redis Queue
 | Redis, очереди | Экспорт CSV, worker |
 | PHPUnit | `tests/Unit`, `tests/Feature` |
 | Docker | `docker-compose.yml` |
-
-Подробная сверка требований — в `.doc/task.md`.
-
+ 
