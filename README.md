@@ -1,5 +1,13 @@
 # Тестовое задание  
 
+**Демо (развёрнуто на сервере):** [http://80.87.192.33:8081](http://80.87.192.33:8081)
+
+| Раздел | URL |
+|--------|-----|
+| Задание 1 — сортировка | [/task1](http://80.87.192.33:8081/task1) |
+| Задание 2 — БД и SQL | [/task2](http://80.87.192.33:8081/task2) |
+| Задание 3 — экспорт CSV | [/export](http://80.87.192.33:8081/export) |
+
 Стек: **PHP 8.2**, **Laravel 12**, **PostgreSQL 15**, **Redis 7**, **Nginx**, **Docker Compose**.
 
 ---
@@ -85,7 +93,49 @@ docker compose logs worker --tail 20
 | `players` | full_name_ru, full_name_en, weight, height |
 | `player_season_club` | связь игрок–сезон–клуб + **player_number** |
 
-**Целостность:** `UNIQUE(player_id, season_id, club_id)`; индексы `idx_psc_player`, `idx_psc_season`, `idx_psc_club`.
+**Схема БД (ER):**
+
+```mermaid
+erDiagram
+    clubs ||--o{ player_season_club : club_id
+    seasons ||--o{ player_season_club : season_id
+    players ||--o{ player_season_club : player_id
+
+    clubs {
+        bigint id PK
+        string name_ru
+        string name_en
+        string city_ru
+        string city_en
+    }
+
+    seasons {
+        bigint id PK
+        string name
+        smallint year_start
+        smallint year_end
+    }
+
+    players {
+        bigint id PK
+        string full_name_ru
+        string full_name_en
+        smallint weight
+        smallint height
+    }
+
+    player_season_club {
+        bigint id PK
+        bigint player_id FK
+        bigint season_id FK
+        bigint club_id FK
+        smallint player_number
+    }
+```
+
+Игровой номер задаётся в `player_season_club`: один игрок может иметь разные номера в разных клубах и сезонах.
+
+**Целостность:** `UNIQUE(player_id, season_id, club_id)`; индексы `idx_psc_player`, `idx_psc_season`, `idx_psc_club`; `ON DELETE CASCADE` по всем FK.
 
 **Демо-данные (сидер):** 3 клуба (СКА, ЦСКА, Ак Барс), 2 сезона, 9 игроков, 18 записей в `player_season_club`.
 
@@ -125,6 +175,33 @@ docker compose logs worker --tail 20
 >500 000 пользователей; кнопка выгрузки; **без перезагрузки** страницы; **AJAX** с прогрессом; ссылка на скачивание; поля: Фамилия, Имя, Телефон, E-mail.
 
 ### Реализация
+
+**Схема БД (задание 3):**
+
+```mermaid
+erDiagram
+    users {
+        bigint id PK
+        string name
+        string email UK
+        string first_name
+        string last_name
+        string phone
+        string password
+        timestamp email_verified_at
+    }
+
+    exports {
+        bigint id PK
+        string status "pending|processing|completed|failed"
+        int processed
+        int total
+        string file_path
+        text error_message
+    }
+```
+
+Таблицы `users` и `exports` не связаны FK: job пишет прогресс в `exports`, CSV читает из `users`.
 
 | Этап | Механизм |
 |------|----------|
