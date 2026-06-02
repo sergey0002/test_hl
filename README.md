@@ -215,9 +215,19 @@ docker compose logs worker --tail 20
 
 | Файл | Назначение |
 |------|------------|
-| `DatabaseSeeder.php` |  хоккейные демо-данные + 500k users |
+| `HockeySeeder.php` | Демо-данные хоккея (для сидера и тестов) |
+| `DatabaseSeeder.php` | Хоккей + 500k users |
 
- 
+### `tests/` (PHPUnit)
+
+| Файл | Назначение |
+|------|------------|
+| `Unit/SortServiceTest.php` | Пузырёк, native sort, граничные случаи |
+| `Unit/ProcessCsvExportTest.php` | Job: CSV, статус completed |
+| `Feature/HomePageTest.php` | GET `/` |
+| `Feature/Task1PageTest.php` | GET/POST `/task1` |
+| `Feature/Task2PageTest.php` | `/task2`, SQL, JOIN по демо-данным |
+| `Feature/ExportApiTest.php` | API экспорта, `Queue::fake()` |
 
 ### `resources/views/`
 
@@ -240,4 +250,73 @@ docker compose logs worker --tail 20
 | `QUEUE_CONNECTION=redis` | Очередь для экспорта |
 | `REDIS_HOST=redis` | Хост Redis в Docker |
 
- 
+---
+
+## Тестирование (PHPUnit)
+
+Конфигурация: `laravel-app/phpunit.xml` — **SQLite in-memory**, `QUEUE_CONNECTION=sync` (job выполняется сразу, без Redis).
+
+```bash
+docker compose exec app sh -lc "cd laravel-app && php artisan test"
+# или
+docker compose exec app sh -lc "cd laravel-app && composer test"
+```
+
+| Suite | Что проверяет |
+|-------|----------------|
+| **Unit** | `SortService` — сортировка, early exit |
+| **Unit** | `ProcessCsvExport` — запись CSV и `completed` |
+| **Feature** | Страницы `/`, `/task1`, `/task2`, `/export` |
+| **Feature** | API `POST /api/export/start` → status → download |
+
+**16 тестов**, покрытие по трём пунктам задания. Dump PostgreSQL (`DatabaseDumpService`) в автотестах не гоняется — нужен `pgsql`; проверяется вручную через `/task2/dump`.
+
+Для production-БД после `migrate:fresh` на PostgreSQL CHECK на `seasons` создаётся только при драйвере `pgsql` (см. миграцию `create_seasons_table`).
+
+---
+
+## Полезные команды
+
+```bash
+# Миграции и сиды (включая 500k users)
+docker compose exec app sh -lc "cd laravel-app && php artisan migrate:fresh --seed --force"
+
+# Только users
+docker compose exec app sh -lc "cd laravel-app && php artisan users:generate 500000 --fresh"
+
+# Воркер и логи
+docker compose up -d --force-recreate worker
+docker compose logs worker --tail 20
+
+# Тесты
+docker compose exec app sh -lc "cd laravel-app && php artisan test"
+```
+
+---
+
+## Архитектура (кратко)
+
+```text
+Браузер → Nginx → laravel-app/public/index.php
+              ├── web: Blade (задания 1–3, home)
+              └── api: JSON (экспорт)
+
+Task3: Browser --AJAX--> Task3Controller --dispatch--> Redis Queue
+              ↑                           ↓
+              └──── poll status ──── Worker → ProcessCsvExport → CSV
+```
+
+---
+
+## Соответствие вакансии
+
+| Навык | Где в проекте |
+|-------|----------------|
+| Laravel 12 | Миграции, Eloquent, Jobs, Blade, API |
+| PostgreSQL, SQL | Задание 2, dump, `generate_series` |
+| Redis, очереди | Экспорт CSV, worker |
+| PHPUnit | `tests/Unit`, `tests/Feature` |
+| Docker | `docker-compose.yml` |
+
+Подробная сверка требований — в `.doc/task.md`.
+
